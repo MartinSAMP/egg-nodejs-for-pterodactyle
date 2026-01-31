@@ -1,0 +1,125 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2024-10-21T00:46:56+00:00",
+    "name": "Martin Node.js Egg",
+    "author": "martinyy09@gmail.com",
+    "description": "Created by Martin - Supports Node.js 1-24",
+    "features": null,
+    "docker_images": {
+        "Nodejs 24": "ghcr.io/parkervcp/yolks:nodejs_24",
+        "Nodejs 23": "ghcr.io/parkervcp/yolks:nodejs_23",
+        "Nodejs 22": "ghcr.io/parkervcp/yolks:nodejs_22",
+        "Nodejs 21": "ghcr.io/parkervcp/yolks:nodejs_21",
+        "Nodejs 20": "ghcr.io/parkervcp/yolks:nodejs_20",
+        "Nodejs 19": "ghcr.io/parkervcp/yolks:nodejs_19",
+        "Nodejs 18": "ghcr.io/parkervcp/yolks:nodejs_18",
+        "Nodejs 17": "ghcr.io/parkervcp/yolks:nodejs_17",
+        "Nodejs 16": "ghcr.io/parkervcp/yolks:nodejs_16",
+        "Nodejs 15": "ghcr.io/parkervcp/yolks:nodejs_15",
+        "Nodejs 14": "ghcr.io/parkervcp/yolks:nodejs_14",
+        "Nodejs 13": "ghcr.io/parkervcp/yolks:nodejs_13",
+        "Nodejs 12": "ghcr.io/parkervcp/yolks:nodejs_12",
+        "Nodejs 11": "ghcr.io/parkervcp/yolks:nodejs_11",
+        "Nodejs 10": "ghcr.io/parkervcp/yolks:nodejs_10",
+        "Nodejs 9": "ghcr.io/parkervcp/yolks:nodejs_9",
+        "Nodejs 8": "ghcr.io/parkervcp/yolks:nodejs_8",
+        "Nodejs 7": "ghcr.io/parkervcp/yolks:nodejs_7",
+        "Nodejs 6": "ghcr.io/parkervcp/yolks:nodejs_6",
+        "Nodejs 5": "ghcr.io/parkervcp/yolks:nodejs_5",
+        "Nodejs 4": "ghcr.io/parkervcp/yolks:nodejs_4",
+        "Nodejs 3": "ghcr.io/parkervcp/yolks:nodejs_3",
+        "Nodejs 2": "ghcr.io/parkervcp/yolks:nodejs_2",
+        "Nodejs 1": "ghcr.io/parkervcp/yolks:nodejs_1"
+    },
+    "file_denylist": [],
+    "startup": "clear; echo -e \"---------------[ This server is powered by Martin ]---------------\\n\"; [ ! -d node_modules ]&&npm install||echo \"Using existing node_modules, delete to reinstall.\"; {{STARTUPSCRIPT}}",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \":\/home\/container$\",\r\n        \"STARTUP \/home\/container\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "^^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\r\n# NodeJS App Installation Script\r\n#\r\n# Server Files: /mnt/server\r\n\r\n# Update package list and install dependencies\r\napt-get update\r\napt-get install -y git curl jq file unzip make gcc g++ python3 python3-dev libtool\r\n\r\nmkdir -p /mnt/server\r\ncd /mnt/server\r\n\r\n# Check if user uploaded their own files\r\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\r\n    echo -e \"User upload detected. Skipping automatic installation.\"\r\n    exit 0\r\nfi\r\n\r\n# Add .git extension if not present\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n    GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\n# Add authentication if username and token are provided\r\nif [ ! -z \"${USERNAME}\" ] && [ ! -z \"${ACCESS_TOKEN}\" ]; then\r\n    GIT_ADDRESS=\"https://${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d/ -f3-)\"\r\nfi\r\n\r\n# Clone or update repository\r\nif [ \"$(ls -A /mnt/server)\" ]; then\r\n    echo -e \"/mnt/server directory is not empty.\"\r\n    if [ -d .git ]; then\r\n        echo -e \".git directory exists\"\r\n        if [ -f .git/config ]; then\r\n            echo -e \"Loading info from git config\"\r\n            ORIGIN=$(git config --get remote.origin.url)\r\n        else\r\n            echo -e \"Files found with no git config\"\r\n            echo -e \"Exiting to avoid breaking existing setup\"\r\n            exit 10\r\n        fi\r\n    fi\r\n\r\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n        echo \"Pulling latest changes from repository\"\r\n        git pull\r\n    fi\r\nelse\r\n    echo -e \"/mnt/server is empty. Cloning repository...\"\r\n    if [ -z \"${BRANCH}\" ]; then\r\n        echo -e \"Cloning default branch\"\r\n        git clone ${GIT_ADDRESS} .\r\n    else\r\n        echo -e \"Cloning branch: ${BRANCH}\"\r\n        git clone --single-branch --branch \"${BRANCH}\" ${GIT_ADDRESS} .\r\n    fi\r\nfi\r\n\r\n# Install Node.js packages\r\necho \"Installing Node.js packages...\"\r\n\r\n# Check Node.js version for compatibility\r\nNODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)\r\necho \"Detected Node.js version: v${NODE_VERSION}\"\r\n\r\n# For older Node.js versions, use legacy npm commands\r\nif [ ${NODE_VERSION} -lt 4 ]; then\r\n    echo \"Using legacy npm for older Node.js version\"\r\n    if [ -f /mnt/server/package.json ]; then\r\n        npm install --production --legacy-bundling\r\n    fi\r\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\r\n        npm install ${NODE_PACKAGES} --legacy-bundling\r\n    fi\r\nelse\r\n    # Modern Node.js versions\r\n    if [ -f /mnt/server/package.json ]; then\r\n        npm ci --only=production --no-audit --no-fund\r\n    fi\r\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\r\n        npm install ${NODE_PACKAGES} --no-audit --no-fund\r\n    fi\r\nfi\r\n\r\n# Check for package-lock.json or yarn.lock for newer versions\r\nif [ -f /mnt/server/package-lock.json ] && [ ${NODE_VERSION} -ge 8 ]; then\r\n    echo \"Found package-lock.json, using npm ci\"\r\n    npm ci --only=production --no-audit --no-fund\r\nelif [ -f /mnt/server/yarn.lock ]; then\r\n    echo \"Found yarn.lock, attempting to use yarn\"\r\n    if command -v yarn &> /dev/null; then\r\n        yarn install --production --ignore-engines\r\n    else\r\n        echo \"Yarn not available, falling back to npm\"\r\n        npm install --production --no-audit --no-fund\r\n    fi\r\nfi\r\n\r\necho -e \"Installation complete!\"\r\nexit 0",
+            "container": "node:14-buster-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Startup Script",
+            "description": "Command to start your Node.js application",
+            "env_variable": "STARTUPSCRIPT",
+            "default_value": "node main.js",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Node Packages",
+            "description": "Additional npm packages to install globally (space separated)",
+            "env_variable": "NODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repository",
+            "description": "URL to your Git repository",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Branch",
+            "description": "Branch to clone from repository",
+            "env_variable": "BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Username",
+            "description": "Git username for private repositories",
+            "env_variable": "USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Access Token",
+            "description": "Git access token/password for private repositories",
+            "env_variable": "ACCESS_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "User Upload",
+            "description": "Set to true if uploading files manually",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|in:true,false,0,1",
+            "field_type": "text"
+        }
+    ]
+}
