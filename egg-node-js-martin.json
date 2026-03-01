@@ -45,7 +45,7 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!/bin/bash\r\n# NodeJS App Installation Script\r\n#\r\n# Server Files: /mnt/server\r\n\r\n# Update package list and install dependencies\r\napt-get update\r\napt-get install -y git curl jq file unzip make gcc g++ python3 python3-dev libtool\r\n\r\nmkdir -p /mnt/server\r\ncd /mnt/server\r\n\r\n# Check if user uploaded their own files\r\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\r\n    echo -e \"User upload detected. Skipping automatic installation.\"\r\n    exit 0\r\nfi\r\n\r\n# Add .git extension if not present\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n    GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\n# Add authentication if username and token are provided\r\nif [ ! -z \"${USERNAME}\" ] && [ ! -z \"${ACCESS_TOKEN}\" ]; then\r\n    GIT_ADDRESS=\"https://${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d/ -f3-)\"\r\nfi\r\n\r\n# Clone or update repository\r\nif [ \"$(ls -A /mnt/server)\" ]; then\r\n    echo -e \"/mnt/server directory is not empty.\"\r\n    if [ -d .git ]; then\r\n        echo -e \".git directory exists\"\r\n        if [ -f .git/config ]; then\r\n            echo -e \"Loading info from git config\"\r\n            ORIGIN=$(git config --get remote.origin.url)\r\n        else\r\n            echo -e \"Files found with no git config\"\r\n            echo -e \"Exiting to avoid breaking existing setup\"\r\n            exit 10\r\n        fi\r\n    fi\r\n\r\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n        echo \"Pulling latest changes from repository\"\r\n        git pull\r\n    fi\r\nelse\r\n    echo -e \"/mnt/server is empty. Cloning repository...\"\r\n    if [ -z \"${BRANCH}\" ]; then\r\n        echo -e \"Cloning default branch\"\r\n        git clone ${GIT_ADDRESS} .\r\n    else\r\n        echo -e \"Cloning branch: ${BRANCH}\"\r\n        git clone --single-branch --branch \"${BRANCH}\" ${GIT_ADDRESS} .\r\n    fi\r\nfi\r\n\r\n# Install Node.js packages\r\necho \"Installing Node.js packages...\"\r\n\r\n# Check Node.js version for compatibility\r\nNODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)\r\necho \"Detected Node.js version: v${NODE_VERSION}\"\r\n\r\n# For older Node.js versions, use legacy npm commands\r\nif [ ${NODE_VERSION} -lt 4 ]; then\r\n    echo \"Using legacy npm for older Node.js version\"\r\n    if [ -f /mnt/server/package.json ]; then\r\n        npm install --production --legacy-bundling\r\n    fi\r\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\r\n        npm install ${NODE_PACKAGES} --legacy-bundling\r\n    fi\r\nelse\r\n    # Modern Node.js versions\r\n    if [ -f /mnt/server/package.json ]; then\r\n        npm ci --only=production --no-audit --no-fund\r\n    fi\r\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\r\n        npm install ${NODE_PACKAGES} --no-audit --no-fund\r\n    fi\r\nfi\r\n\r\n# Check for package-lock.json or yarn.lock for newer versions\r\nif [ -f /mnt/server/package-lock.json ] && [ ${NODE_VERSION} -ge 8 ]; then\r\n    echo \"Found package-lock.json, using npm ci\"\r\n    npm ci --only=production --no-audit --no-fund\r\nelif [ -f /mnt/server/yarn.lock ]; then\r\n    echo \"Found yarn.lock, attempting to use yarn\"\r\n    if command -v yarn &> /dev/null; then\r\n        yarn install --production --ignore-engines\r\n    else\r\n        echo \"Yarn not available, falling back to npm\"\r\n        npm install --production --no-audit --no-fund\r\n    fi\r\nfi\r\n\r\necho -e \"Installation complete!\"\r\nexit 0",
+            "script": "#!/bin/bash\r\n# NodeJS App Installation Script\r\n#\r\n# Server Files: /mnt/server\r\n\r\n# Update package list and install dependencies\r\napt-get update\r\napt-get install -y git curl jq file unzip make gcc g++ python3 python3-dev libtool\r\n\r\nmkdir -p /mnt/server\r\ncd /mnt/server\r\n\r\n# Check if user uploaded their own files\r\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\r\n    echo -e \"User upload detected. Skipping automatic installation.\"\r\n    exit 0\r\nfi\r\n\r\n# Only proceed with git if GIT_ADDRESS is provided\r\nif [ -n \"${GIT_ADDRESS}\" ]; then\r\n    # Add .git extension if not present\r\n    if [[ ${GIT_ADDRESS} != *.git ]]; then\r\n        GIT_ADDRESS=${GIT_ADDRESS}.git\r\n    fi\r\n\r\n    # Add authentication if username and token are provided\r\n    if [ ! -z \"${USERNAME}\" ] && [ ! -z \"${ACCESS_TOKEN}\" ]; then\r\n        GIT_ADDRESS=\"https://${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d/ -f3-)\"\r\n    fi\r\n\r\n    # Clone or update repository\r\n    if [ \"$(ls -A /mnt/server)\" ]; then\r\n        echo -e \"/mnt/server directory is not empty.\"\r\n        if [ -d .git ]; then\r\n            echo -e \".git directory exists\"\r\n            if [ -f .git/config ]; then\r\n                echo -e \"Loading info from git config\"\r\n                ORIGIN=$(git config --get remote.origin.url)\r\n            else\r\n                echo -e \"Files found with no git config\"\r\n                echo -e \"Exiting to avoid breaking existing setup\"\r\n                exit 10\r\n            fi\r\n        fi\r\n\r\n        if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n            echo \"Pulling latest changes from repository\"\r\n            git pull\r\n        fi\r\n    else\r\n        echo -e \"/mnt/server is empty. Cloning repository...\"\r\n        if [ -z \"${BRANCH}\" ]; then\r\n            echo -e \"Cloning default branch\"\r\n            git clone ${GIT_ADDRESS} .\r\n        else\r\n            echo -e \"Cloning branch: ${BRANCH}\"\r\n            git clone --single-branch --branch \"${BRANCH}\" ${GIT_ADDRESS} .\r\n        fi\r\n    fi\r\nelse\r\n    echo \"GIT_ADDRESS tidak diisi. Lewati proses kloning git.\"\r\nfi\r\n\r\n# Install Node.js packages\r\necho \"Installing Node.js packages...\"\r\n\r\n# Check Node.js version for compatibility\r\nNODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)\r\necho \"Detected Node.js version: v${NODE_VERSION}\"\r\n\r\n# For older Node.js versions, use legacy npm commands\r\nif [ ${NODE_VERSION} -lt 4 ]; then\r\n    echo \"Using legacy npm for older Node.js version\"\r\n    if [ -f /mnt/server/package.json ]; then\r\n        npm install --production --legacy-bundling\r\n    fi\r\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\r\n        npm install ${NODE_PACKAGES} --legacy-bundling\r\n    fi\r\nelse\r\n    # Modern Node.js versions\r\n    if [ -f /mnt/server/package.json ]; then\r\n        npm ci --only=production --no-audit --no-fund\r\n    fi\r\n    if [[ ! -z ${NODE_PACKAGES} ]]; then\r\n        npm install ${NODE_PACKAGES} --no-audit --no-fund\r\n    fi\r\nfi\r\n\r\n# Check for package-lock.json or yarn.lock for newer versions\r\nif [ -f /mnt/server/package-lock.json ] && [ ${NODE_VERSION} -ge 8 ]; then\r\n    echo \"Found package-lock.json, using npm ci\"\r\n    npm ci --only=production --no-audit --no-fund\r\nelif [ -f /mnt/server/yarn.lock ]; then\r\n    echo \"Found yarn.lock, attempting to use yarn\"\r\n    if command -v yarn &> /dev/null; then\r\n        yarn install --production --ignore-engines\r\n    else\r\n        echo \"Yarn not available, falling back to npm\"\r\n        npm install --production --no-audit --no-fund\r\n    fi\r\nfi\r\n\r\necho -e \"Installation complete!\"\r\nexit 0",
             "container": "node:14-buster-slim",
             "entrypoint": "bash"
         }
@@ -53,17 +53,17 @@
     "variables": [
         {
             "name": "Git Repo Address",
-            "description": "GitHub Repo to clone i.E. https://github.com/parkervcp/repo_name",
+            "description": "URL repository Git. Tidak wajib diisi jika menggunakan unggahan file (User Uploaded Files = true). Contoh: https://github.com/parkervcp/repo_name",
             "env_variable": "GIT_ADDRESS",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|string|url",
+            "rules": "string|url|nullable",
             "field_type": "text"
         },
         {
             "name": "Install Branch",
-            "description": "The branch to install.",
+            "description": "Cabang (branch) yang akan di-clone. Kosongkan untuk menggunakan branch default.",
             "env_variable": "BRANCH",
             "default_value": "",
             "user_viewable": true,
@@ -73,7 +73,7 @@
         },
         {
             "name": "User Uploaded Files",
-            "description": "Enable this option if you want to skip automatic installation and let the user upload files manually.",
+            "description": "Aktifkan opsi ini jika ingin melewati instalasi otomatis (git clone) dan membiarkan pengguna mengunggah file secara manual.",
             "env_variable": "USER_UPLOAD",
             "default_value": "false",
             "user_viewable": true,
@@ -83,7 +83,7 @@
         },
         {
             "name": "Auto Update",
-            "description": "Pull the latest files from the Git repository on startup if enabled.",
+            "description": "Jika diaktifkan, akan menjalankan 'git pull' setiap kali server dimulai (hanya jika direktori sudah merupakan repo git).",
             "env_variable": "AUTO_UPDATE",
             "default_value": "false",
             "user_viewable": true,
@@ -93,7 +93,7 @@
         },
         {
             "name": "Additional Node packages",
-            "description": "Install additional node packages. Use spaces to separate.",
+            "description": "Pasang paket Node tambahan. Pisahkan dengan spasi.",
             "env_variable": "NODE_PACKAGES",
             "default_value": "",
             "user_viewable": true,
@@ -103,7 +103,7 @@
         },
         {
             "name": "Git Username",
-            "description": "Username to auth with git.",
+            "description": "Nama pengguna untuk otentikasi Git (jika repo privat).",
             "env_variable": "USERNAME",
             "default_value": "",
             "user_viewable": true,
@@ -113,7 +113,7 @@
         },
         {
             "name": "Git Access Token",
-            "description": "Password to use with git. It's best practice to use a Personal Access Token. https://github.com/settings/tokens https://gitlab.com/-/profile/personal_access_tokens",
+            "description": "Token akses personal untuk Git. https://github.com/settings/tokens atau https://gitlab.com/-/profile/personal_access_tokens",
             "env_variable": "ACCESS_TOKEN",
             "default_value": "",
             "user_viewable": true,
@@ -123,7 +123,7 @@
         },
         {
             "name": "Uninstall Node packages",
-            "description": "Uninstall node packages. Use spaces to separate.",
+            "description": "Hapus paket Node. Pisahkan dengan spasi.",
             "env_variable": "UNNODE_PACKAGES",
             "default_value": "",
             "user_viewable": true,
@@ -133,7 +133,7 @@
         },
         {
             "name": "Main file",
-            "description": "The main file to run. Use .js for JavaScript or .ts for TypeScript.",
+            "description": "File utama yang akan dijalankan. Gunakan .js untuk JavaScript atau .ts untuk TypeScript.",
             "env_variable": "MAIN_FILE",
             "default_value": "src/index.js",
             "user_viewable": true,
@@ -143,7 +143,7 @@
         },
         {
             "name": "Node Arguments",
-            "description": "Additional arguments to pass to the Node.js process.",
+            "description": "Argumen tambahan untuk proses Node.js.",
             "env_variable": "NODE_ARGS",
             "default_value": "",
             "user_viewable": true,
