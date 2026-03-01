@@ -7,7 +7,7 @@
     "exported_at": "2024-10-21T00:46:56+00:00",
     "name": "Martin Node.js Egg",
     "author": "martinyy09@gmail.com",
-    "description": "Created by Martin - Supports Node.js 1-24",
+    "description": "Created by Martin - Supports Node.js 1-24 with Auto Update, TypeScript Support, and Package Management",
     "features": null,
     "docker_images": {
         "Nodejs 24": "ghcr.io/parkervcp/yolks:nodejs_24",
@@ -36,7 +36,7 @@
         "Nodejs 1": "ghcr.io/parkervcp/yolks:nodejs_1"
     },
     "file_denylist": [],
-    "startup": "clear; echo -e \"---------------[ This server is powered by Martin ]---------------\\n\"; [ ! -d node_modules ]&&npm install||echo \"Using existing node_modules, delete to reinstall.\"; {{STARTUPSCRIPT}}",
+    "startup": "if [[ -d .git ]] && [[ 0 == \"1\" ]]; then git pull; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then /usr/local/bin/npm install ${NODE_PACKAGES}; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall ${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ \"${MAIN_FILE}\" == \"*.js\" ]]; then /usr/local/bin/node \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; else /usr/local/bin/ts-node --esm \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; fi",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": [\r\n        \":\/home\/container$\",\r\n        \"STARTUP \/home\/container\"\r\n    ]\r\n}",
@@ -52,38 +52,18 @@
     },
     "variables": [
         {
-            "name": "Startup Script",
-            "description": "Command to start your Node.js application",
-            "env_variable": "STARTUPSCRIPT",
-            "default_value": "node main.js",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "required|string",
-            "field_type": "text"
-        },
-        {
-            "name": "Node Packages",
-            "description": "Additional npm packages to install globally (space separated)",
-            "env_variable": "NODE_PACKAGES",
-            "default_value": "",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "string",
-            "field_type": "text"
-        },
-        {
-            "name": "Git Repository",
-            "description": "URL to your Git repository",
+            "name": "Git Repo Address",
+            "description": "GitHub Repo to clone i.E. https://github.com/parkervcp/repo_name",
             "env_variable": "GIT_ADDRESS",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "string|nullable",
+            "rules": "required|string|url",
             "field_type": "text"
         },
         {
-            "name": "Git Branch",
-            "description": "Branch to clone from repository",
+            "name": "Install Branch",
+            "description": "The branch to install.",
             "env_variable": "BRANCH",
             "default_value": "",
             "user_viewable": true,
@@ -92,8 +72,38 @@
             "field_type": "text"
         },
         {
-            "name": "Username",
-            "description": "Git username for private repositories",
+            "name": "User Uploaded Files",
+            "description": "Skip all the install stuff if you are letting a user upload files. 0 = false (default) 1 = true",
+            "env_variable": "USER_UPLOAD",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|in:0,1,true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Pull the latest files on startup when using a GitHub repo.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|in:0,1,true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Additional Node packages",
+            "description": "Install additional node packages. Use spaces to separate.",
+            "env_variable": "NODE_PACKAGES",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to auth with git.",
             "env_variable": "USERNAME",
             "default_value": "",
             "user_viewable": true,
@@ -102,8 +112,8 @@
             "field_type": "text"
         },
         {
-            "name": "Access Token",
-            "description": "Git access token/password for private repositories",
+            "name": "Git Access Token",
+            "description": "Password to use with git. It's best practice to use a Personal Access Token. https://github.com/settings/tokens https://gitlab.com/-/profile/personal_access_tokens",
             "env_variable": "ACCESS_TOKEN",
             "default_value": "",
             "user_viewable": true,
@@ -112,13 +122,33 @@
             "field_type": "text"
         },
         {
-            "name": "User Upload",
-            "description": "Set to true if uploading files manually",
-            "env_variable": "USER_UPLOAD",
-            "default_value": "false",
+            "name": "Uninstall Node packages",
+            "description": "Uninstall node packages. Use spaces to separate.",
+            "env_variable": "UNNODE_PACKAGES",
+            "default_value": "",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "string|in:true,false,0,1",
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Main file",
+            "description": "The main file to run. Use .js for JavaScript or .ts for TypeScript.",
+            "env_variable": "MAIN_FILE",
+            "default_value": "src/index.js",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Node Arguments",
+            "description": "Additional arguments to pass to the Node.js process.",
+            "env_variable": "NODE_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
             "field_type": "text"
         }
     ]
