@@ -36,7 +36,7 @@
         "Nodejs 1": "ghcr.io/parkervcp/yolks:nodejs_1"
     },
     "file_denylist": [],
-    "startup": "if [[ -d .git ]] && [[ 0 == \"1\" ]]; then git pull; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then /usr/local/bin/npm install ${NODE_PACKAGES}; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall ${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ \"${MAIN_FILE}\" == \"*.js\" ]]; then /usr/local/bin/node \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; else /usr/local/bin/ts-node --esm \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; fi",
+    "startup": "if [[ -d .git ]] && { [[ \"${AUTO_UPDATE}\" == \"1\" ]] || [[ \"${AUTO_UPDATE}\" == \"true\" ]]; }; then git pull; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then /usr/local/bin/npm install ${NODE_PACKAGES}; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall ${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ \"${MAIN_FILE}\" == \"*.js\" ]]; then /usr/local/bin/node \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; else /usr/local/bin/ts-node --esm \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; fi",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": [\r\n        \":\/home\/container$\",\r\n        \"STARTUP \/home\/container\"\r\n    ]\r\n}",
@@ -73,23 +73,23 @@
         },
         {
             "name": "User Uploaded Files",
-            "description": "Skip all the install stuff if you are letting a user upload files. 0 = false (default) 1 = true",
+            "description": "Enable this option if you want to skip automatic installation and let the user upload files manually.",
             "env_variable": "USER_UPLOAD",
-            "default_value": "0",
+            "default_value": "false",
             "user_viewable": true,
             "user_editable": true,
             "rules": "string|in:0,1,true,false",
-            "field_type": "text"
+            "field_type": "checkbox"
         },
         {
             "name": "Auto Update",
-            "description": "Pull the latest files on startup when using a GitHub repo.",
+            "description": "Pull the latest files from the Git repository on startup if enabled.",
             "env_variable": "AUTO_UPDATE",
-            "default_value": "0",
+            "default_value": "false",
             "user_viewable": true,
             "user_editable": true,
             "rules": "string|in:0,1,true,false",
-            "field_type": "text"
+            "field_type": "checkbox"
         },
         {
             "name": "Additional Node packages",
