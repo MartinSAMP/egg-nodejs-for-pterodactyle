@@ -7,7 +7,7 @@
     "exported_at": "2024-10-21T00:46:56+00:00",
     "name": "Martin Node.js Egg",
     "author": "martinyy09@gmail.com",
-    "description": "Created by Martin - Supports Node.js 1-24 with Auto Update, TypeScript Support, and Package Management",
+    "description": "Created by Martin - Supports Node.js 1-24 with Auto Update, TypeScript Support, Package Management, and Custom Commands",
     "features": null,
     "docker_images": {
         "Nodejs 24": "ghcr.io/parkervcp/yolks:nodejs_24",
@@ -36,7 +36,7 @@
         "Nodejs 1": "ghcr.io/parkervcp/yolks:nodejs_1"
     },
     "file_denylist": [],
-    "startup": "if [[ -d .git ]] && { [[ \"${AUTO_UPDATE}\" == \"1\" ]] || [[ \"${AUTO_UPDATE}\" == \"true\" ]]; }; then git pull; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then /usr/local/bin/npm install ${NODE_PACKAGES}; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall ${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ \"${MAIN_FILE}\" == \"*.js\" ]]; then /usr/local/bin/node \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; else /usr/local/bin/ts-node --esm \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; fi",
+    "startup": "if [[ -d .git ]] && { [[ \"${AUTO_UPDATE}\" == \"1\" ]] || [[ \"${AUTO_UPDATE}\" == \"true\" ]]; }; then git pull; fi; if [[ ! -z ${NODE_PACKAGES} ]]; then /usr/local/bin/npm install ${NODE_PACKAGES}; fi; if [[ ! -z ${UNNODE_PACKAGES} ]]; then /usr/local/bin/npm uninstall ${UNNODE_PACKAGES}; fi; if [ -f /home/container/package.json ]; then /usr/local/bin/npm install; fi; if [[ ! -z \"${COMMAND_RUN}\" ]]; then eval \"${COMMAND_RUN}\"; else if [[ \"${MAIN_FILE}\" == \"*.js\" ]]; then /usr/local/bin/node \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; else /usr/local/bin/ts-node --esm \"/home/container/${MAIN_FILE}\" ${NODE_ARGS}; fi; fi",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": [\r\n        \":\/home\/container$\",\r\n        \"STARTUP \/home\/container\"\r\n    ]\r\n}",
@@ -53,7 +53,7 @@
     "variables": [
         {
             "name": "Git Repo Address",
-            "description": "URL repository Git. Tidak wajib diisi jika menggunakan unggahan file (User Uploaded Files = true). Contoh: https://github.com/parkervcp/repo_name",
+            "description": "URL repository Git. Tidak wajib diisi jika menggunakan unggahan file (User Uploaded Files = true). Contoh: https://github.com/parkervcp/repo_name ",
             "env_variable": "GIT_ADDRESS",
             "default_value": "",
             "user_viewable": true,
@@ -113,7 +113,7 @@
         },
         {
             "name": "Git Access Token",
-            "description": "Token akses personal untuk Git. https://github.com/settings/tokens atau https://gitlab.com/-/profile/personal_access_tokens",
+            "description": "Token akses personal untuk Git. https://github.com/settings/tokens  atau https://gitlab.com/-/profile/personal_access_tokens ",
             "env_variable": "ACCESS_TOKEN",
             "default_value": "",
             "user_viewable": true,
@@ -133,7 +133,7 @@
         },
         {
             "name": "Main file",
-            "description": "File utama yang akan dijalankan. Gunakan .js untuk JavaScript atau .ts untuk TypeScript.",
+            "description": "File utama yang akan dijalankan. Gunakan .js untuk JavaScript atau .ts untuk TypeScript. (Tidak digunakan jika Custom Command diisi)",
             "env_variable": "MAIN_FILE",
             "default_value": "src/index.js",
             "user_viewable": true,
@@ -143,8 +143,18 @@
         },
         {
             "name": "Node Arguments",
-            "description": "Argumen tambahan untuk proses Node.js.",
+            "description": "Argumen tambahan untuk proses Node.js. (Tidak digunakan jika Custom Command diisi)",
             "env_variable": "NODE_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "string|nullable",
+            "field_type": "text"
+        },
+        {
+            "name": "Command Run",
+            "description": "Perintah kustom yang akan dieksekusi saat server dijalankan. Jika diisi, akan menggantikan Main File dan Node Arguments. Contoh: npm start, node server.js, npm run dev, node dist/index.js",
+            "env_variable": "COMMAND_RUN",
             "default_value": "",
             "user_viewable": true,
             "user_editable": true,
